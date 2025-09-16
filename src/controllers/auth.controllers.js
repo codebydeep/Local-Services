@@ -30,15 +30,15 @@ const register = asyncHandler(async (req, res) => {
 
     const createdUser = await User.findById(user._id).select("-password -refreshToken");
 
-    const refreshToken = user.generateRefreshToken()
-    const accessToken = user.generateAccessToken()
-    const emailToken = user.generateEmailVerificationToken()
+    const refreshToken = await user.generateRefreshToken()
+    const accessToken = await user.generateAccessToken()
+    const emailToken = await user.generateEmailVerificationToken()
 
     user.refreshToken = refreshToken
     user.emailVerificationToken = emailToken
     user.emailVerificationTokenExpiry = Date.now() + 10 * 60 * 1000
 
-    user.save({ validateBeforeSave: false })
+    await user.save({ validateBeforeSave: false })
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
@@ -87,12 +87,12 @@ const login = asyncHandler(async (req, res) => {
 
     const loginUser = await User.findById(user._id).select("-password -refreshToken -emailVerificationToken -emailVerificationTokenExpiry")
 
-    const refreshToken = user.generateRefreshToken()
-    const accessToken = user.generateAccessToken()
+    const refreshToken = await user.generateRefreshToken()
+    const accessToken = await user.generateAccessToken()
 
     user.refreshToken = refreshToken
 
-    user.save({validateBeforeSave: false})
+    await user.save({validateBeforeSave: false});
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
@@ -140,12 +140,115 @@ const logout = asyncHandler(async (req, res) => {
         sameSite: "strict"
     })
 
-    res.status(200).json(
+    return res.status(200).json(
         new ApiResponse(
             200,
             "User logged out successfully!"
         )
     )
-}); 
+});
 
-export { register, login, logout };
+const getProfile = asyncHandler(async(req, res) => {
+    const user = await User.findById(req.user._id).select("-password -refreshToken -emailVerificationToken -emailVerificationTokenExpiry")
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            user,
+            "User Profile fetched successfully!"
+        )
+    )
+});
+
+const changeCurrentPassword = asyncHandler(async(req, res) => {
+    const {
+        oldPassword,
+        newPassword
+    } = req.body
+
+    if(oldPassword == newPassword){
+        throw new ApiError(
+            400,
+            "Passwords must be different!"
+        )
+    }
+
+    const user = await User.findById(req.user._id)
+
+    const isMatched = await user.isPasswordMatched(oldPassword);
+
+    if(!isMatched){
+        throw new ApiError(
+            400,
+            "Invalid old Password!"
+        )
+    }
+
+    user.password = newPassword;
+
+    await user.save({ validateBeforeSave: false });
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            [],
+            "Password changed successfully!"
+        )
+    )
+});
+
+const verifyEmail = asyncHandler(async(req, res) => {
+    const token = req.query.token;
+    
+    if(!token){
+        throw new ApiError(
+            400,
+            "Token is required to verify Email!"
+        )
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.EMAIL_VERIFICATION_TOKEN_SECRET);
+
+        if(!decoded){
+            throw new ApiError(
+                400,
+                "Invalid Email token!"
+            )
+        }
+
+        const user = await User.findOne({
+            _id: decoded.id,
+            emailVerificationToken: token,
+            emailVerificationTokenExpiry: { $gt: Date.now() }
+        })
+
+        if(!user){
+            throw new ApiError(
+                400,
+                "User not found!"
+            )
+        }
+
+        user.isEmailVerified = true;
+        user.emailVerificationToken = undefined;
+        user.emailVerificationTokenExpiry = undefined;
+
+        await user.save({ validateBeforeSave: false });
+
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                [],
+                "Email verified successfully!"
+            )
+        )
+
+    } catch (error) {
+        throw new ApiError(
+            400,
+            "Error while verifying Email token!"
+        )
+    }
+});
+
+export { register, login, logout, getProfile, changeCurrentPassword, verifyEmail };

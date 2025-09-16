@@ -6,9 +6,7 @@ import User from "../models/user.model.js";
 import jwt from "jsonwebtoken"
 
 const authMiddleware = asyncHandler(async(req, res, next) => {
-    let token = req.cookies?.accessToken
-
-     console.log("Access Token from cookie:", token);
+    let token = req.cookies?.accessToken;
 
     if(!token){
         throw new ApiError(
