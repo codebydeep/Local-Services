@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import cookieParser from "cookie-parser";
+
 import healthCheckRoutes from "./routes/health-check.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 
@@ -10,6 +12,7 @@ dotenv.config({
 
 const app = express();
 
+app.use(cookieParser());
 app.use(express.json());
 app.use(
     express.urlencoded({
