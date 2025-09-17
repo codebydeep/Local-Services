@@ -1,6 +1,6 @@
 export const UserRolesEnum = {
     ADMIN: "admin",
-    SERVICE_PROVIDER: "service-provider",
+    PROVIDER: "provider",
     CUSTOMER: "customer"
 };
 

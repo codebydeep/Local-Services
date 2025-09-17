@@ -251,4 +251,80 @@ const verifyEmail = asyncHandler(async(req, res) => {
     }
 });
 
-export { register, login, logout, getProfile, changeCurrentPassword, verifyEmail };
+const refreshAccessToken = asyncHandler(async(req, res) => {
+    const incomingRefreshToken = req.cookies?.refreshToken;
+
+    if(!incomingRefreshToken){
+        throw new ApiError(
+            400,
+            "Unauthorized request"
+        );
+    }
+
+    try {
+        const decoded = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+        const user = await User.findById(decoded.id);
+
+        if(!user){
+            throw new ApiError(
+                401,
+                "Unauthorized request"
+            );
+        }
+
+        if(incomingRefreshToken !== user?.refreshToken){
+            throw new ApiError(
+                401,
+                "Refresh Token is expired or used!"
+            );
+        }
+
+        const newRefreshToken = user.generateRefreshToken();
+        const accessToken = user.generateAccessToken()
+
+        user.refreshToken = newRefreshToken;
+
+        await user.save({ validateBeforeSave: false });
+
+         res.cookie("refreshToken", newRefreshToken, {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 24 * 60 * 60 * 1000
+    });
+
+    res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production",
+        maxAge: 15 * 60 * 1000
+    });
+
+    res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                accessToken: accessToken, 
+                refreshToken: newRefreshToken
+            },
+            "Access token refreshed successfully!",
+        )
+    )
+    } catch (error) {
+        throw new ApiError(
+            401,
+            "Invalid refresh token"
+        )
+    }
+})
+
+export { 
+    register, 
+    login, 
+    logout, 
+    getProfile, 
+    changeCurrentPassword, 
+    verifyEmail, 
+    refreshAccessToken 
+};
