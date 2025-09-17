@@ -2,6 +2,8 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+import { UserRolesEnum, AvailableUserRoles } from "../utils/constants.js";
+
 const userSchema = new mongoose.Schema(
     {
         fullname: {
@@ -18,6 +20,11 @@ const userSchema = new mongoose.Schema(
         },
         refreshToken: {
             type: String,
+        },
+        role: {
+            type: String,
+            enum: AvailableUserRoles,
+            default: UserRolesEnum.CUSTOMER
         },
         isEmailVerified: {
             type: Boolean,
@@ -53,7 +60,7 @@ userSchema.methods.generateEmailVerificationToken = function () {
     return jwt.sign(
         {
             id: this._id,
-            // role: this.role,
+            role: this.role,
         },
         process.env.EMAIL_VERIFICATION_TOKEN_SECRET,
         {
@@ -66,7 +73,7 @@ userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
             id: this._id,
-            // role: this.role,
+            role: this.role,
         },
         process.env.REFRESH_TOKEN_SECRET,
         {
@@ -79,7 +86,7 @@ userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
             id: this._id,
-            // role: this.role,
+            role: this.role,
         },
         process.env.ACCESS_TOKEN_SECRET,
         {
