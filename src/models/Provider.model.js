@@ -10,6 +10,10 @@ const providerSchema = new mongoose.Schema(
         servicesOffered: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Services",
+            // required: true
+        },
+        businessName: {
+            type: String,
             required: true
         },
         description: {
@@ -18,8 +22,10 @@ const providerSchema = new mongoose.Schema(
             required: true
         },
         address: {
-            type: String,
-            required: true
+            street: String,
+            city: String,
+            state: String,
+            pincode: Number,
         }
     },
     {

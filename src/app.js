@@ -5,6 +5,9 @@ import cookieParser from "cookie-parser";
 
 import healthCheckRoutes from "./routes/health-check.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import providerRoutes from "./routes/provider.routes.js";
+import categoryRoutes from "./routes/category.routes.js";
+import serviceRoutes from "./routes/services.routes.js";
 
 dotenv.config({
     path: "./.env",
@@ -29,7 +32,9 @@ app.use(
 );
 
 app.use("/api/v1/health-check", healthCheckRoutes);
-
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/providers", providerRoutes);
+app.use("/api/v1/categories", categoryRoutes);
+app.use("/api/v1/services", serviceRoutes);
 
 export default app;
